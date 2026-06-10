@@ -1,36 +1,42 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# BEETLE / BTL-01 — Model Cost & Performance Advisor (beta)
 
-## Getting Started
+Beetle pulls every live model from **OpenRouter**, scores each on **cost + performance**,
+and assembles **3 budget-capped "teams"** of models. Pick a team, drop into a playground,
+and watch your prompt get colour-coded live by intent — each highlighted keyword surfaces
+the team model that would handle it, with a verdict on the most cost-efficient group.
 
-First, run the development server:
+## How it works
+
+- **Data** — `app/api/models/route.ts` fetches OpenRouter's `/api/v1/models` live (1h cache)
+  and falls back to the committed snapshot in `data/snapshot.json` if the API is unreachable.
+- **Scoring** (`lib/scoring.ts`) — pricing → blended `$/1M tokens` (70% prompt / 30% completion),
+  capabilities derived from `supported_parameters` (tools, reasoning) and `input_modalities`
+  (vision), quality from a **hybrid** curated tier table refined per-axis.
+- **Teams** (`lib/groups.ts`) — three trade-offs (BUDGET / BALANCED / MAX-PERFORMANCE).
+  **Worst-case budget guarantee:** every member's blended `$/1M` ≤ your budget, so processing
+  1M tokens never exceeds budget no matter how it's orchestrated.
+- **Playground** (`app/playground/page.tsx`) — `lib/keywords.ts` segments the prompt and tags
+  keywords by capability; a transparent textarea over a coloured backdrop renders the live
+  highlight. Execution is **simulate-only** (no API key, no real calls).
+
+## Design
+
+NASA / Berkeley-Graphics technical test-report aesthetic — pure-black canvas, JetBrains Mono,
+hairline-bordered data-grid cells, swatch palette (`lib/palette.ts`) driving both the keyword
+highlights and the benchmark/quality graphs.
+
+## Run
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm run dev   # http://localhost:3000
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Capability → colour
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
-
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+| Axis | Colour |
+|---|---|
+| Reasoning / Thinking | purple |
+| Coding | cyan |
+| Vision | magenta |
+| Tool calling | amber |
+| Research / General | teal |

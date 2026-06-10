@@ -1,26 +1,126 @@
 @import "tailwindcss";
 
+/* ---- The Beetle Project — dark theme ---- */
+/* Colour is used for graph bars, group accents, and keyword highlighters. */
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --bg: #000000;
+  --surface: #0a0b0d;
+  --panel: #101216;
+  --panel-2: #15181d;
+  --fg: #ededed;
+  --muted: #7e848f;
+  --line: rgba(255, 255, 255, 0.08);
+  --line-bright: rgba(255, 255, 255, 0.16);
+  --track: rgba(255, 255, 255, 0.07);
+
+  /* capability / highlight palette (vibrant on dark) */
+  --reasoning: #9d7bff;
+  --coding: #3b9eff;
+  --vision: #ff4d9d;
+  --tools: #f0a93b;
+  --research: #2fd98f;
+  --format: #7c83ff;
+
+  /* group accents */
+  --budget: #2fd98f;
+  --balanced: #3b9eff;
+  --maxperf: #9d7bff;
+  --custom: #22d3ee;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-panel: var(--panel);
+  --color-panel2: var(--panel-2);
+  --color-fg: var(--fg);
+  --color-muted: var(--muted);
+  --color-line: var(--line);
+  --color-line-bright: var(--line-bright);
+  --font-mono: var(--font-jbmono), "JetBrains Mono", "IBM Plex Mono", ui-monospace,
+    SFMono-Regular, Menlo, monospace;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+* {
+  box-sizing: border-box;
 }
 
+html,
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--font-mono);
+  -webkit-font-smoothing: antialiased;
+  font-feature-settings: "tnum" 1;
+}
+
+::selection {
+  background: var(--research);
+  color: #000;
+}
+
+.lbl {
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--muted);
+  font-size: 10.5px;
+  line-height: 1.5;
+}
+
+.val {
+  font-size: 13px;
+  letter-spacing: 0.01em;
+}
+
+.num {
+  font-variant-numeric: tabular-nums;
+}
+
+/* rounded dark panel */
+.panel {
+  border: 1px solid var(--line);
+  background: var(--panel);
+  border-radius: 14px;
+}
+
+.panel-2 {
+  border: 1px solid var(--line);
+  background: var(--panel-2);
+  border-radius: 12px;
+}
+
+input,
+textarea,
+button,
+select {
+  font-family: inherit;
+}
+
+input[type="number"] {
+  color-scheme: dark;
+}
+
+::-webkit-scrollbar {
+  width: 9px;
+  height: 9px;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--line-bright);
+  border-radius: 5px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* keyword highlighter — soft background, never underline */
+.kw {
+  border-radius: 4px;
+  padding: 1px 3px;
+  margin: 0 -1px;
+}
+
+/* subtle glow utility for bar fills */
+.glow {
+  filter: saturate(1.1);
 }
