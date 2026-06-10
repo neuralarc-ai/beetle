@@ -7,13 +7,13 @@ const CAP_LEXICON: Record<Capability, string[]> = {
     "react", "next.js", "api", "function", "website", "web app", "web page",
     "landing page", "app", "build", "program", "script", "debug", "sql",
     "backend", "frontend", "component", "deploy", "refactor", "algorithm",
-    "bug", "compile",
+    "bug", "compile", "create", "develop", "implement", "prototype",
   ],
   research: [
     "research", "find", "search", "analyze", "analyse", "summarize",
     "summarise", "compare", "investigate", "sources", "paper", "study",
     "explain", "gather", "market", "competitor", "report", "review",
-    "literature", "fact-check", "overview",
+    "literature", "fact-check", "overview", "write", "draft", "generate",
   ],
   reasoning: [
     "reason", "reasoning", "think", "solve", "math", "logic", "prove",
@@ -34,7 +34,7 @@ const CAP_LEXICON: Record<Capability, string[]> = {
 // Output-format lexicon -> what container the user wants the result in.
 // (website/html stay in the coding axis above; detected as a format separately.)
 const FMT_LEXICON: Partial<Record<OutputFormat, string[]>> = {
-  word: ["word document", "word doc", "docx", "word file"],
+  word: ["word document", "word doc", "docx", "word file", "document", "documentation"],
   excel: ["excel", "spreadsheet", "xlsx", "google sheet", "google sheets"],
   csv: ["csv", "comma separated", "comma-separated"],
   pdf: ["pdf", "pdf file"],

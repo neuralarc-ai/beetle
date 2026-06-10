@@ -7,7 +7,8 @@ import { Bar, CapBadge, Header } from "@/components/ui";
 import { Nav } from "@/components/nav";
 import { useModelDetail } from "@/components/model-detail";
 import { CAPABILITY_COLOR, FORMAT_COLOR, GROUP_ACCENT, C, tint } from "@/lib/palette";
-import { detectCapabilities, detectFormats, segment } from "@/lib/keywords";
+import { segment } from "@/lib/keywords";
+import { estimateGroupCost, estimateWorkload } from "@/lib/workload";
 import { resolveFormat } from "@/lib/formats";
 import { buildCustomTeam, buildTeams } from "@/lib/groups";
 import {
@@ -51,6 +52,7 @@ function PlaygroundInner() {
   const budget = Number(params.get("budget") ?? "20");
   const initialTeam = params.get("team") ?? "BTL-G2";
   const customIds = (params.get("custom") ?? "").split(",").filter(Boolean);
+  const customKey = customIds.join(",");
 
   const [models, setModels] = useState<Model[]>([]);
   const [teamId, setTeamId] = useState(initialTeam);
@@ -72,30 +74,30 @@ function PlaygroundInner() {
     const custom = customIds.length ? buildCustomTeam(models, customIds) : null;
     return custom ? [custom, ...base] : base;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [models, budget, customIds.join(",")]);
+  }, [models, budget, customKey]);
   const team = teams.find((t) => t.id === teamId) ?? teams.find((t) => t.id === "BTL-G2") ?? teams[0];
 
   const segs = useMemo(() => segment(text), [text]);
-  const counts = useMemo(() => detectCapabilities(text), [text]);
-  const formats = useMemo(() => detectFormats(text), [text]);
-  const detected = CAPABILITIES.filter((c) => counts[c] > 0);
+  const job = useMemo(() => estimateWorkload(text), [text]);
+  const { counts, detected, formats } = job;
 
-  const estTokens = Math.max(1, Math.round(text.trim().length / 4));
-
-  const selfMetrics = team ? teamForCaps(team, detected) : { cost: 0, quality: 0, eff: 0 };
-  const promptCostPerM = detected.length ? selfMetrics.cost : team?.evenSplitPerM ?? 0;
-  const promptPrice = (estTokens / 1_000_000) * promptCostPerM;
+  // keyword-driven cost of running this workload through the selected group
+  const groupCost = useMemo(() => estimateGroupCost(team, job), [team, job]);
+  const promptPrice = groupCost.total;
+  const promptCostPerM = groupCost.effectivePerM;
 
   const verdict = useMemo(() => {
-    if (!detected.length || !teams.length) return null;
+    if ((!detected.length && !formats.length) || !teams.length) return null;
     let best: { team: Team; cost: number; eff: number } | null = null;
     for (const t of teams) {
-      const r = teamForCaps(t, detected);
-      if (!best || r.eff > best.eff) best = { team: t, cost: r.cost, eff: r.eff };
+      const quality = teamForCaps(t, detected).quality;
+      const cost = estimateGroupCost(t, job).total;
+      const eff = quality / (1 + cost);
+      if (!best || eff > best.eff) best = { team: t, cost, eff };
     }
     return best;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [teams, detected.join(",")]);
+  }, [teams, job]);
 
   const formatSupports = useMemo(
     () => (team ? formats.map((f) => resolveFormat(f, team, models, budget)) : []),
@@ -213,7 +215,7 @@ function PlaygroundInner() {
               <div>
                 <div className="lbl">This prompt ≈</div>
                 <div className="text-2xl font-extrabold num mt-0.5">{micro(promptPrice)}</div>
-                <div className="lbl">{estTokens} EST TOKENS</div>
+                <div className="lbl">{job.inputTokens} IN + {job.outputTokens} OUT TOK</div>
               </div>
               <div>
                 <div className="lbl">{RANK_TITLE[team?.rank ?? "BALANCED"]} cost / 1M</div>
@@ -231,13 +233,9 @@ function PlaygroundInner() {
             <div className="space-y-2 pt-1 border-t border-line">
               <div className="lbl">Projected prompt cost — all groups</div>
               {teams.map((t) => {
-                const cpm = detected.length ? teamForCaps(t, detected).cost : t.evenSplitPerM;
-                const price = (estTokens / 1_000_000) * cpm;
+                const price = estimateGroupCost(t, job).total;
                 const maxPrice = Math.max(
-                  ...teams.map((g) => {
-                    const c = detected.length ? teamForCaps(g, detected).cost : g.evenSplitPerM;
-                    return (estTokens / 1_000_000) * c;
-                  }),
+                  ...teams.map((g) => estimateGroupCost(g, job).total),
                   0.0000001
                 );
                 const a = GROUP_ACCENT[t.rank];
@@ -338,14 +336,14 @@ function PlaygroundInner() {
                 </span>{" "}
                 <span className="lbl">{verdict.team.id}</span>
                 <div className="lbl mt-0.5">
-                  Covers {detected.map((c) => CAPABILITY_LABEL[c]).join(" · ")}
+                  Covers {detected.map((c) => CAPABILITY_LABEL[c]).join(" · ") || "general"}
                 </div>
               </div>
               <div className="flex items-center gap-6">
                 <div className="text-right">
-                  <div className="lbl">Cost / 1M</div>
+                  <div className="lbl">Est. cost</div>
                   <div className="val num font-bold" style={{ color: GROUP_ACCENT[verdict.team.rank] }}>
-                    {money(verdict.cost)}
+                    {micro(verdict.cost)}
                   </div>
                 </div>
                 {verdict.team.id !== team?.id && (
